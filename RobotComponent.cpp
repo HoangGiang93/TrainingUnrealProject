@@ -16,17 +16,20 @@ URobotComponent::URobotComponent()
 // Called when the game starts
 void URobotComponent::BeginPlay()
 {
+  SetFixBase();
   Super::BeginPlay();
-
-  // ...
 }
 
 // Called every frame
 void URobotComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+  SetFixBase();
+  for (auto& Link : Links)
+  {
+    Link->SetEnableGravity(bEnableGravity);
+  }
+  
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-  // ...
 }
 
 void URobotComponent::Init()
@@ -44,6 +47,9 @@ void URobotComponent::Init()
   AddJoint(FName(TEXT("Joint_5")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free);
   AddLink(FName(TEXT("Link_6")), TEXT("StaticMesh'/Game/Assets/SM_Link_6.SM_Link_6'"), FVector(0.f, 0.f, 9.465f), FRotator(0.f, 0.f, 0.f));
   AddJoint(FName(TEXT("Joint_6")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free, EAngularConstraintMotion::ACM_Locked);
+
+  bEnableGravity = true;
+  bFixBase = true;
 
   UE_LOG(LogTemp, Warning, TEXT("Finish initializing Robot."))
 }
@@ -102,7 +108,7 @@ void URobotComponent::AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Loc
     Link->SetSimulatePhysics(true);
     Link->SetLinearDamping(0.f);
     Link->SetAngularDamping(0.f);
-    Link->SetEnableGravity(bGravityEnabled);
+    Link->SetEnableGravity(bEnableGravity);
   }
   else
   {
@@ -111,4 +117,17 @@ void URobotComponent::AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Loc
   }
 
   Links.Add(Link);
+}
+
+void URobotComponent::SetFixBase()
+{
+  if (Links.Num() && Links[0])
+  {
+    Links[0]->SetSimulatePhysics(!bFixBase);
+  }
+  else
+  {
+    UE_LOG(LogTemp, Error, TEXT("Links or Links[0] not found."))
+    return;
+  }
 }

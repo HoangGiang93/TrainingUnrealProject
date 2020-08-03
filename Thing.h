@@ -13,10 +13,6 @@ class TRAININGPROJECT_API AThing : public AActor
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(EditAnywhere)
-    bool bGravityEnabled = false;
-
-public:
     // Sets default values for this actor's properties
     AThing();
 

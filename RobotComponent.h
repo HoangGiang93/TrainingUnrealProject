@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "Components/ActorComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -16,9 +17,17 @@ class TRAININGPROJECT_API URobotComponent : public UActorComponent
   GENERATED_BODY()
 public:
   UPROPERTY(EditAnywhere)
-  bool bGravityEnabled;
+  bool bEnableGravity;
+
+  UPROPERTY(EditAnywhere)
+  bool bFixBase;
+
+  FORCEINLINE virtual UStaticMeshComponent* GetLink(const int32& i) const { return Links[i]; };
+  FORCEINLINE virtual UPhysicsConstraintComponent* GetJoint(const int32& i) const { return Joints[i]; };
+  FORCEINLINE virtual int32 GetNumberOfJoints() const { return Joints.Num(); };
 
   virtual void Init();
+  virtual void SetFixBase();
 
 protected:
   virtual void AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Location, FRotator Rotation);
