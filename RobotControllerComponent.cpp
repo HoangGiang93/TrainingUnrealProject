@@ -24,7 +24,11 @@ void URobotControllerComponent::BeginPlay()
 void URobotControllerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
   UpdateJointStates();
-  AddJointTorques();
+  if (bEnablePositionController)
+  {
+    PositionController();
+  }
+  UpdateJointForcesAndTorques();
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
   // ...
@@ -36,8 +40,22 @@ void URobotControllerComponent::Init()
   if (Model)
   {
     Robot = Model->FindComponentByClass<URobotComponent>();
+    for (int32 i = 0; i < Robot->GetNumberOfJoints(); ++i)
+    {
+      UStaticMeshComponent* Link = Robot->GetLink(i + 1);
+      FVector CenterOfMassOffset = Link->GetComponentRotation().UnrotateVector(Link->GetCenterOfMass() - Link->GetComponentLocation());
+      Link->SetCenterOfMass(-CenterOfMassOffset, NAME_None);
+    }
+
     JointStates.Init(0.f, Robot->GetNumberOfJoints());
-    JointTorques.Init(0.f, Robot->GetNumberOfJoints());
+    JointStatesOffset.Init(0.f, Robot->GetNumberOfJoints());
+    UpdateJointStates();
+    //JointStatesOffset = JointStates;
+    JointStates.Init(0.f, Robot->GetNumberOfJoints());
+    DesiredJointStates.Init(0.f, Robot->GetNumberOfJoints());
+    InJointTorques.Init(0.f, Robot->GetNumberOfJoints());
+    OutJointTorques.Init(FVector(0.f), Robot->GetNumberOfJoints());
+    OutJointForces.Init(FVector(0.f), Robot->GetNumberOfJoints());
   }
   else
   {
@@ -53,16 +71,26 @@ void URobotControllerComponent::UpdateJointStates()
 
   for (int32 i = 0; i < JointStates.Num(); ++i)
   {
-    Cast<USceneComponent>(Robot->GetLink(i + 1))->GetComponentRotation().Quaternion().ToAxisAndAngle(Axis, Angle);
-    if (Axis.X + Axis.Y + Axis.Z < 0.f)
+    FRotator LinkParentRotation = Robot->GetLink(i)->GetComponentRotation();
+    FRotator LinkChildRotation = Robot->GetLink(i + 1)->GetComponentRotation();
+    FRotator LinkChildOriginRotation = UKismetMathLibrary::ComposeRotators(LinkChildRotation, Robot->GetLinkRotationOffset(i).GetInverse());
+    FRotator LinkDeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(LinkChildOriginRotation, LinkParentRotation).;
+    Angle = LinkChildOriginRotation.GetManhattanDistance(LinkParentRotation);
+    /* Robot->GetLink(i)->GetComponentRotation().UnrotateVector(Robot->GetLink(i + 1)->GetComponentRotation().Vector())
+     ->GetRelativeTransform().GetRotation().ToAxisAndAngle(Axis, Angle); */
+
+    /* if (Axis.X + Axis.Y + Axis.Z < 0.f)
     {
       Angle = -Angle;
-    }
+    } */
+    //JointStates[i] = Angle + JointStatesOffset[i];
+    UE_LOG(LogTemp, Log, TEXT("JointStates[%d]: %f"), i, Angle)
+    UE_LOG(LogTemp, Log, TEXT("Axis[%d]: %s"), i, *LinkDeltaRotation.ToString())
     JointStates[i] = Angle;
   }
 }
 
-void URobotControllerComponent::AddJointTorques()
+void URobotControllerComponent::UpdateJointForcesAndTorques()
 {
   TArray<FVector> AxisOrientation;
   AxisOrientation.Emplace(0.f, 0.f, 1.f);
@@ -74,6 +102,30 @@ void URobotControllerComponent::AddJointTorques()
   for (int32 i = 0; i < JointStates.Num(); ++i)
   {
     UStaticMeshComponent* Link = Robot->GetLink(i + 1);
-    Link->AddTorqueInDegrees(Link->GetComponentRotation().RotateVector(AxisOrientation[i] * JointTorques[i]));
+    FVector InJointTorque = Link->GetComponentRotation().RotateVector(AxisOrientation[i] * InJointTorques[i]);
+    /* UE_LOG(LogTemp, Log, TEXT("InJointTorques[%d]: %s"), i, *InJointTorque.ToString())
+    UE_LOG(LogTemp, Log, TEXT("CenterOfMass [%d]: %s"), i, *Link->GetCenterOfMass().ToString())
+    UE_LOG(LogTemp, Log, TEXT("JointComponentLocation [%d]: %s"), i, *Link->GetComponentLocation().ToString())
+    FVector CenterOfMassOffset = Link->GetCenterOfMass() - Link->GetComponentLocation();
+    UE_LOG(LogTemp, Log, TEXT("CenterOfMassOffset [%d]: %s"), i, *CenterOfMassOffset.ToString()) */
+    Link->AddTorqueInRadians(InJointTorque, NAME_None, true);
+    Robot->GetJoint(i)->GetConstraintForce(OutJointForces[i], OutJointTorques[i]);
+    DrawDebugLine(
+        GetWorld(),
+        Link->GetCenterOfMass(),
+        Link->GetCenterOfMass() + FMath::Sqrt(FMath::Abs(InJointTorques[i])) * Link->GetComponentRotation().RotateVector(AxisOrientation[i]),
+        FColor(0, 255, 0),
+        false,
+        0.f,
+        0,
+        1.f);
+  }
+}
+
+void URobotControllerComponent::PositionController()
+{
+  for (int32 i = 0; i < JointStates.Num(); ++i)
+  {
+    InJointTorques[i] = (DesiredJointStates[i] - JointStates[i]) * 100;
   }
 }

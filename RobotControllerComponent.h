@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "DrawDebugHelpers.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "RobotComponent.h"
 // clang-format off
 #include "RobotControllerComponent.generated.h"
@@ -18,12 +19,27 @@ public:
   virtual void Init();
 
   UPROPERTY(EditAnywhere)
-  TArray<float> JointTorques;
+  TArray<float> InJointTorques;
 
-  virtual void AddJointTorques();
+  UPROPERTY(EditAnywhere)
+  TArray<float> DesiredJointStates;
+
+  UPROPERTY(EditAnywhere)
+  bool bEnablePositionController;
 
 protected:
+  virtual void PositionController();
+  virtual void UpdateJointForcesAndTorques();
   virtual void UpdateJointStates();
+
+  UPROPERTY(VisibleAnywhere)
+  TArray<float> JointStatesOffset;
+
+  UPROPERTY(VisibleAnywhere)
+  TArray<FVector> OutJointForces;
+
+  UPROPERTY(VisibleAnywhere)
+  TArray<FVector> OutJointTorques;
 
   UPROPERTY(VisibleAnywhere)
   URobotComponent* Robot;

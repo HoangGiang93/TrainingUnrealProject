@@ -25,6 +25,7 @@ public:
   FORCEINLINE virtual UStaticMeshComponent* GetLink(const int32& i) const { return Links[i]; };
   FORCEINLINE virtual UPhysicsConstraintComponent* GetJoint(const int32& i) const { return Joints[i]; };
   FORCEINLINE virtual int32 GetNumberOfJoints() const { return Joints.Num(); };
+  FORCEINLINE virtual FRotator GetLinkRotationOffset(const int32& i) const { return LinkRotationOffsets[i]; };
 
   virtual void Init();
   virtual void SetFixBase();
@@ -38,6 +39,9 @@ protected:
 
   UPROPERTY(VisibleAnywhere)
   TArray<UPhysicsConstraintComponent*> Joints;
+
+  UPROPERTY(VisibleAnywhere)
+  TArray<FRotator> LinkRotationOffsets;
 
   UPROPERTY(VisibleAnywhere)
   AActor* Model;

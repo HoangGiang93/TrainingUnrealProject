@@ -28,7 +28,7 @@ void URobotComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
   {
     Link->SetEnableGravity(bEnableGravity);
   }
-  
+
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
@@ -37,7 +37,7 @@ void URobotComponent::Init()
   AddLink(FName(TEXT("Base")), TEXT("StaticMesh'/Game/Assets/SM_Base.SM_Base'"), FVector(0.f), FRotator(0.f));
   AddLink(FName(TEXT("Link_1")), TEXT("StaticMesh'/Game/Assets/SM_Link_1.SM_Link_1'"), FVector(0.f, 0.f, 8.9159f), FRotator(0.f));
   AddJoint(FName(TEXT("Joint_1")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free);
-  AddLink(FName(TEXT("Link_2")), TEXT("StaticMesh'/Game/Assets/SM_Link_2.SM_Link_2'"), FVector(0.f, -13.585f, 0.f), FRotator(-90.f, 0.f, 0.f));
+  /* AddLink(FName(TEXT("Link_2")), TEXT("StaticMesh'/Game/Assets/SM_Link_2.SM_Link_2'"), FVector(0.f, -13.585f, 0.f), FRotator(-90.f, 0.f, 0.f));
   AddJoint(FName(TEXT("Joint_2")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free, EAngularConstraintMotion::ACM_Locked);
   AddLink(FName(TEXT("Link_3")), TEXT("StaticMesh'/Game/Assets/SM_Link_3.SM_Link_3'"), FVector(0.f, 11.97f, 42.500f), FRotator(0.f));
   AddJoint(FName(TEXT("Joint_3")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free, EAngularConstraintMotion::ACM_Locked);
@@ -46,8 +46,7 @@ void URobotComponent::Init()
   AddLink(FName(TEXT("Link_5")), TEXT("StaticMesh'/Game/Assets/SM_Link_5.SM_Link_5'"), FVector(0.f, -10.915f - 11.97f + 13.585f, 0.f), FRotator(0.f, 0.f, 0.f));
   AddJoint(FName(TEXT("Joint_5")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free);
   AddLink(FName(TEXT("Link_6")), TEXT("StaticMesh'/Game/Assets/SM_Link_6.SM_Link_6'"), FVector(0.f, 0.f, 9.465f), FRotator(0.f, 0.f, 0.f));
-  AddJoint(FName(TEXT("Joint_6")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free, EAngularConstraintMotion::ACM_Locked);
-
+  AddJoint(FName(TEXT("Joint_6")), FVector(0.f), FRotator(0.f), EAngularConstraintMotion::ACM_Locked, EAngularConstraintMotion::ACM_Free, EAngularConstraintMotion::ACM_Locked); */
   bEnableGravity = true;
   bFixBase = true;
 
@@ -69,6 +68,8 @@ void URobotComponent::AddJoint(FName JointName, FVector Location, FRotator Rotat
   Joint->SetupAttachment(LinkChild);
   Joint->SetConstrainedComponents(LinkParent, FName(*LinkParent->GetName()), LinkChild, FName(*LinkChild->GetName()));
   Joint->SetRelativeLocationAndRotation(Location, Rotation);
+  Joint->ConstraintInstance.ProfileInstance.LinearLimit.bSoftConstraint = false;
+  Joint->ConstraintInstance.ProfileInstance.TwistLimit.bSoftConstraint = false;
   Joint->ConstraintInstance.SetDisableCollision(true);
   Joint->ConstraintInstance.SetLinearXMotion(ELinearConstraintMotion::LCM_Locked);
   Joint->ConstraintInstance.SetLinearYMotion(ELinearConstraintMotion::LCM_Locked);
@@ -77,7 +78,7 @@ void URobotComponent::AddJoint(FName JointName, FVector Location, FRotator Rotat
   Joint->ConstraintInstance.SetAngularSwing2Motion(Y);
   Joint->ConstraintInstance.SetAngularTwistMotion(X);
 
-  Joints.Add(Joint);
+  Joints.Push(Joint);
 }
 
 void URobotComponent::AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Location, FRotator Rotation)
@@ -109,6 +110,7 @@ void URobotComponent::AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Loc
     Link->SetLinearDamping(0.f);
     Link->SetAngularDamping(0.f);
     Link->SetEnableGravity(bEnableGravity);
+    LinkRotationOffsets.Push(Rotation);
   }
   else
   {
@@ -116,7 +118,7 @@ void URobotComponent::AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Loc
     return;
   }
 
-  Links.Add(Link);
+  Links.Push(Link);
 }
 
 void URobotComponent::SetFixBase()
