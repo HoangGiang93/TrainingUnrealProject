@@ -22,13 +22,22 @@ public:
   UPROPERTY(EditAnywhere)
   bool bFixBase;
 
+  UPROPERTY(EditAnywhere)
+  TArray<bool> FixLinks;
+
+  UPROPERTY(EditAnywhere)
+  TArray<bool> FixJoints;
+
   FORCEINLINE virtual UStaticMeshComponent* GetLink(const int32& i) const { return Links[i]; };
   FORCEINLINE virtual UPhysicsConstraintComponent* GetJoint(const int32& i) const { return Joints[i]; };
   FORCEINLINE virtual int32 GetNumberOfJoints() const { return Joints.Num(); };
   FORCEINLINE virtual FRotator GetLinkRotationOffset(const int32& i) const { return LinkRotationOffsets[i]; };
 
   virtual void Init();
-  virtual void SetFixBase();
+  virtual void SetFixLinks();
+  virtual void SetFixJoints();
+  virtual void SetEnableGravity();
+  virtual void SetupRobot();
 
 protected:
   virtual void AddLink(FName LinkName, const TCHAR* LinkMesh, FVector Location, FRotator Rotation);
